@@ -1,22 +1,38 @@
-// Promises
-// Represent eventual completion/failure of async operations.
+// Promises Deep Dive
+// Chaining, error propagation, microtask ordering, and combinators
 
-const delay = (ms, value) => new Promise(resolve => setTimeout(() => resolve(value), ms));
+const delay = (ms, value, shouldReject = false) => new Promise((res, rej) => setTimeout(() => shouldReject ? rej(value) : res(value), ms));
 
-delay(200, 'A')
-  .then(v => console.log('then:', v))
-  .catch(err => console.error('error:', err))
-  .finally(() => console.log('finally'));
+console.log('--- Chaining and error propagation ---');
+Promise.resolve(1)
+  .then(v => v + 1)               // 2
+  .then(v => { throw new Error('boom'); })
+  .then(() => console.log('never'))
+  .catch(err => { console.log('caught:', err.message); return 42; })
+  .then(v => console.log('recovered value:', v));    // 42
 
-// Combinators with an async IIFE to use await
+console.log('\n--- Microtask queue ordering ---');
+Promise.resolve().then(() => console.log('micro A'));
+Promise.resolve().then(() => console.log('micro B'));
+queueMicrotask(() => console.log('micro C'));
+// Order: micro A, micro B, micro C (Promise jobs enqueue FIFO before queueMicrotask in many engines)
+
+console.log('\n--- Combinators: all vs race vs allSettled vs any ---');
 (async () => {
-  const tasks = [1, 2, 3].map(n => delay(n * 50, n));
-  const all = await Promise.all(tasks).catch(e => e);
-  const settled = await Promise.allSettled(tasks);
-  const race = await Promise.race(tasks);
-  const any = await Promise.any(tasks).catch(e => e); // AggregateError if all reject
-  console.log('all:', all);
-  console.log('settled:', settled.map(r => r.status));
-  console.log('race:', race);
-  console.log('any:', any);
+  const tasks = [delay(50, 'A'), delay(30, 'B'), delay(40, 'C', /*reject*/ false)];
+  console.log('all:', await Promise.all(tasks));
+  console.log('race:', await Promise.race(tasks));
+  console.log('allSettled:', (await Promise.allSettled(tasks)).map(r => r.status));
+  console.log('any (first fulfilled):', await Promise.any(tasks));
+
+  try {
+    await Promise.all([delay(10, 'ok'), delay(5, new Error('fail'), true)]);
+  } catch (e) {
+    console.log('all rejected due to one failure');
+  }
+  try {
+    await Promise.any([delay(10, new Error('x'), true), delay(5, new Error('y'), true)]);
+  } catch (agg) {
+    console.log('any AggregateError when all reject');
+  }
 })();
