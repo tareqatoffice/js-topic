@@ -1,8 +1,6 @@
-## Proxies and Reflect
+// Proxies and Reflect
+// Intercept and customize operations on objects.
 
-Intercept and customize operations on objects.
-
-```javascript
 const target = { x: 1 };
 const proxy = new Proxy(target, {
   get(obj, prop, recv) {
@@ -16,6 +14,5 @@ const proxy = new Proxy(target, {
 });
 
 proxy.x = 2;       // OK
-console.log(proxy.x);
-// proxy.x = 'bad'; // throws
-```
+console.log('proxy.x:', proxy.x);
+// proxy.x = 'bad'; // uncomment to see the TypeError

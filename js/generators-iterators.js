@@ -1,7 +1,6 @@
-## Generators and Iterators
+// Generators and Iterators
 
-### Custom iterator
-```javascript
+// Custom iterator via Symbol.iterator
 const range = {
   from: 1, to: 3,
   [Symbol.iterator]() {
@@ -11,19 +10,14 @@ const range = {
     };
   }
 };
-console.log([...range]); // [1,2,3]
-```
+console.log('range spread:', [...range]); // [1,2,3]
 
-### Generators
-```javascript
+// Generators
 function* gen() { yield 1; yield 2; return 3; }
-for (const v of gen()) console.log(v); // 1, 2
-```
+for (const v of gen()) console.log('gen value:', v); // 1, 2
 
-### Async generators
-```javascript
+// Async generator
 async function* stream() {
   yield 'A'; await new Promise(r => setTimeout(r, 10)); yield 'B';
 }
-for await (const v of stream()) console.log(v);
-```
+(async () => { for await (const v of stream()) console.log('async gen:', v); })();
