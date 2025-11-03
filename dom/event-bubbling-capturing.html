@@ -1,0 +1,104 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Event Capturing vs Bubbling</title>
+    <style>
+      body { font-family: system-ui, sans-serif; padding: 20px; }
+      .box { padding: 16px; border: 2px solid #ccc; margin: 8px; }
+      #grand { border-color: #6c5ce7; }
+      #parent { border-color: #00b894; }
+      #child  { border-color: #fdcb6e; }
+      #log { white-space: pre; background: #111; color: #0f0; padding: 12px; min-height: 140px; }
+      button { padding: 8px 12px; }
+      .controls { margin: 12px 0; }
+      label { margin-right: 12px; }
+    </style>
+  </head>
+  <body>
+    <h1>Event Capturing vs Bubbling</h1>
+
+    <div class="controls">
+      <label><input type="checkbox" id="stopChild" /> child.stopPropagation()</label>
+      <label><input type="checkbox" id="stopImmediate" /> child.stopImmediatePropagation()</label>
+      <label><input type="checkbox" id="preventDefault" /> preventDefault on button (no real default, for demo)</label>
+    </div>
+
+    <div id="grand" class="box">
+      grand (document → window outside)
+      <div id="parent" class="box">
+        parent
+        <div id="child" class="box">
+          child
+          <button id="btn">Click me</button>
+        </div>
+      </div>
+    </div>
+
+    <h3>Log</h3>
+    <div id="log"></div>
+
+    <script>
+      const logEl = document.getElementById('log');
+      const grand = document.getElementById('grand');
+      const parent = document.getElementById('parent');
+      const child  = document.getElementById('child');
+      const btn    = document.getElementById('btn');
+
+      const stopChild = document.getElementById('stopChild');
+      const stopImmediate = document.getElementById('stopImmediate');
+      const preventDefault = document.getElementById('preventDefault');
+
+      function phaseName(e) {
+        // 1: capturing, 2: at target, 3: bubbling
+        return e.eventPhase === 1 ? 'capture' : (e.eventPhase === 2 ? 'target' : 'bubble');
+      }
+      function log(msg) {
+        logEl.textContent += msg + "\n";
+        logEl.scrollTop = logEl.scrollHeight;
+      }
+      function resetLog() { logEl.textContent = ''; }
+
+      // Attach listeners for grand → parent → child on both phases
+      const nodes = [grand, parent, child, btn];
+      nodes.forEach(node => {
+        node.addEventListener('click', (e) => {
+          log(`[CAPTURE] ${node.id || node.tagName.toLowerCase()} phase=${phaseName(e)} target=${e.target.id || e.target.tagName.toLowerCase()}`);
+        }, true); // capture
+        node.addEventListener('click', (e) => {
+          log(`[BUBBLE ] ${node.id || node.tagName.toLowerCase()} phase=${phaseName(e)} target=${e.target.id || e.target.tagName.toLowerCase()}`);
+        }); // bubble
+      });
+
+      // Child button special handlers to demonstrate stopPropagation and stopImmediatePropagation
+      function childFirstHandler(e) {
+        if (preventDefault.checked) e.preventDefault();
+        if (stopImmediate.checked) {
+          log('child FIRST handler calling stopImmediatePropagation()');
+          e.stopImmediatePropagation();
+        } else if (stopChild.checked) {
+          log('child FIRST handler calling stopPropagation()');
+          e.stopPropagation();
+        }
+      }
+      function childSecondHandler() {
+        log('child SECOND handler ran (won\'t run if stopImmediatePropagation was used)');
+      }
+
+      btn.addEventListener('click', childFirstHandler);
+      btn.addEventListener('click', childSecondHandler);
+
+      // Clicking outside resets the log
+      document.addEventListener('click', (e) => {
+        if (!grand.contains(e.target)) resetLog();
+      });
+
+      // Notes:
+      // - Capturing phase travels from window → document → html → body → grand → parent → child
+      // - Target phase at the clicked element
+      // - Bubbling phase goes back child → parent → grand → body → html → document → window
+      // - stopPropagation() prevents further propagation in the current phase chain.
+      // - stopImmediatePropagation() also prevents other listeners on the same target in the same phase.
+    </script>
+  </body>
+</html>
