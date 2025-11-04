@@ -25,6 +25,55 @@
     <h3>Log</h3>
     <div id="log"></div>
 
+    <hr />
+    <section aria-labelledby="delegation-explain-title">
+      <h2 id="delegation-explain-title">Detailed explanation</h2>
+      <p>
+        <strong>Event delegation</strong> attaches one listener to a common ancestor (here, the
+        <code>ul#list</code>) and uses properties like <code>event.target</code> and
+        <code>Element.closest()</code> to figure out which child element was interacted with.
+        This works because most events <em>bubble</em> from the original target up through ancestors.
+      </p>
+
+      <h3>Why delegate?</h3>
+      <ul>
+        <li><strong>Fewer listeners</strong>: one handler instead of one per item (memory + CPU win).</li>
+        <li><strong>Dynamic content</strong>: new items added later are handled automatically.</li>
+        <li><strong>Simpler teardown</strong>: remove one listener when destroying the view.</li>
+      </ul>
+
+      <h3>How it works here</h3>
+      <ul>
+        <li>Clicks anywhere in the list bubble to <code>#list</code>.</li>
+        <li>We call <code>e.target.closest('li')</code> to find the clicked <code>li</code> (if any).</li>
+        <li>We optionally cancel default link navigation with <code>e.preventDefault()</code> when
+            a nested <code>&lt;a&gt;</code> is clicked, so the page does not jump.</li>
+        <li><code>e.currentTarget</code> would be <code>#list</code> inside the delegate handler;
+            <code>e.target</code> is the innermost element actually clicked.</li>
+      </ul>
+
+      <h3>Pitfalls and tips</h3>
+      <ul>
+        <li>If a child calls <code>stopPropagation()</code>, delegation will not see the event.</li>
+        <li>Some events do not bubble (e.g., <code>mouseenter</code>, <code>mouseleave</code>); use
+            bubbling alternatives (<code>mouseover</code>/<code>mouseout</code>) or capture-phase.
+        </li>
+        <li>Focus events bubble as <code>focusin</code>/<code>focusout</code> (not <code>focus</code>/<code>blur</code>).</li>
+        <li>Always validate the target with <code>closest()</code> and ensure it is within
+            the container to avoid handling clicks from outside.</li>
+        <li>Accessibility: consider keyboard interactions (<code>Enter</code>, <code>Space</code>)
+            if list items are interactive.</li>
+      </ul>
+
+      <h3>Try it</h3>
+      <ul>
+        <li>Click on existing items and observe the log.</li>
+        <li>Press “Add item” and click the new item—no extra listeners were added.</li>
+        <li>Click directly on the link text vs empty area in the <code>li</code> to see
+            <code>preventDefault()</code> in action.</li>
+      </ul>
+    </section>
+
     <script>
       const list = document.getElementById('list');
       const add = document.getElementById('add');
